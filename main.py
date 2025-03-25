@@ -4,7 +4,9 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()
-DATA_DIR = "data"
+# Set base directory to the directory where main.py is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
 @app.get("/list-data")
 def list_data():
