@@ -6,6 +6,14 @@ from pydantic import BaseModel
 app = FastAPI()
 DATA_DIR = "data"
 
+@app.get("/list-data")
+def list_data():
+    try:
+        files = os.listdir("data")
+        return {"files": files}
+    except Exception as e:
+        return {"error": str(e)}
+
 from fastapi.responses import HTMLResponse
 
 @app.get("/", response_class=HTMLResponse)
