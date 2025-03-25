@@ -11,7 +11,7 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 @app.get("/list-data")
 def list_data():
     try:
-        files = os.listdir("data")
+        files = os.listdir(f"{DATA_DIR}")
         return {"files": files}
     except Exception as e:
         return {"error": str(e)}
@@ -42,7 +42,7 @@ async def lookup(req: LookupRequest):
     # PGA_HTS + PGA_Codes
     df_hts = pd.read_excel(f"{DATA_DIR}/PGA_HTS.xlsx", dtype=str) \
         .rename(columns={"HTS Number - Full": "HsCode"})
-    df_pga = pd.read_excel(f"{DATA_DIR}/PGA_Codes.xlsx")
+    df_pga = pd.read_excel(f"{DATA_DIR}/PGA_codes.xlsx")
     pga_hts = (
         df_hts.merge(df_pga, how="left",
                      left_on=["PGA Name Code","PGA Flag Code","PGA Program Code"],
