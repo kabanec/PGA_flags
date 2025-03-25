@@ -5,3 +5,4 @@ openai==1.68.2
 python-dotenv==1.0.0
 requests==2.31.0
 pip==25.0.1
+open==3.2.0b1
