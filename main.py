@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
-
+from urllib.parse import urlparse
 
 load_dotenv()
 app = FastAPI()
@@ -15,6 +15,20 @@ app = FastAPI()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 BARCODE_API_KEY = os.getenv("BARCODE_API_KEY")
+logger = logging.getLogger("uvicorn.error")
+
+class LookupRequest(BaseModel):
+    hs_code: str
+    name: str | None = None
+    description: str | None = None
+
+class UPCRequest(BaseModel):
+    upc: str
+
+def is_valid_url(url: str) -> bool:
+    parsed = urlparse(url.strip())
+    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+
 
 @app.get("/test-chatgpt")
 async def test_chatgpt():
@@ -35,17 +49,10 @@ def list_data():
     except Exception as e:
         return {"error": str(e)}
 
-from fastapi.responses import HTMLResponse
-
 @app.get("/", response_class=HTMLResponse)
 async def home():
     with open("templates/index.html", "r") as f:
         return f.read()
-
-logger = logging.getLogger("uvicorn.error")
-
-class UPCRequest(BaseModel):
-    upc: str
 
 @app.post("/lookup-upc")
 async def lookup_upc(req: UPCRequest):
@@ -72,9 +79,6 @@ async def lookup_upc(req: UPCRequest):
         "description": product.get("description",""),
         "image": product.get("images",[""])[0]
     }
-
-class LookupRequest(BaseModel):
-    hs_code: str
 
 @app.post("/lookup")
 async def lookup(req: LookupRequest):
@@ -114,20 +118,26 @@ async def lookup(req: LookupRequest):
     hs_rules = hs_rules.replace("", pd.NA).dropna(axis=1, how="all") \
         .to_dict(orient="records")
 
-    # Collect unique regulation links
-    links = {rec.get("TextLink") for rec in pga_hts if rec.get("TextLink")}
-    requirements = []
+    # Build a unique set of only valid HTTP(S) links
+    links = set()
+    for rec in pga_hts:
+        for col in ("TextLink", "Website Link", "CFR"):
+            raw = rec.get(col) or ""
+            for url in raw.split():
+                if is_valid_url(url):
+                    links.add(url)
 
-    for url in links:
+    requirements = []
+    for url in sorted(links):
         try:
             page_text = requests.get(url, timeout=10).text
             prompt = (
-                f"Product Name: {req_data.get('name', 'N/A')}\n"
-                f"Product Description: {req_data.get('description', 'N/A')}\n\n"
-                "From this regulatory page, list each required document to clear the product and its conditions."
-                f"\n\nPage content:\n{page_text}"
+                f"Product Name: {req.name or 'N/A'}\n"
+                f"Product Description: {req.description or 'N/A'}\n\n"
+                "From this regulatory page, list each required document and its conditions.\n\n"
+                f"Page content:\n{page_text}"
             )
-            resp = openai.ChatCompletion.create(
+            resp = openai.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "system", "content": "You are a customs compliance expert understanding how the participate government agencies work. Able to identify and describe the compliance needs for a given product."},
                           {"role": "user", "content": prompt}]

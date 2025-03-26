@@ -134,7 +134,6 @@ document.getElementById('lookupBtn').onclick = async () => {
     results.appendChild(await renderSection('PGA HTS Lookup', json.pga_hts));
     results.appendChild(await renderSection('HS Restrictions', json.hs_rules));
     results.appendChild(await renderSection('PGA Requirements', json.pga_requirements));
-    results.appendChild(await renderSection('PGA Requirements (raw)', json.pga_requirements.map(r => ({URL:r.url, Raw_Response:r.raw_response || r.error}))));
   } finally {
     spinner.style.display = 'none';
   }
