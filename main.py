@@ -1,12 +1,31 @@
 import os
 import pandas as pd
-from fastapi import FastAPI
+import requests
+import logging
+import openai
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.responses import HTMLResponse
 
+
+load_dotenv()
 app = FastAPI()
 # Set base directory to the directory where main.py is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
+BARCODE_API_KEY = os.getenv("BARCODE_API_KEY")
+
+@app.get("/test-chatgpt")
+async def test_chatgpt():
+    try:
+        completion = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"user","content":"Say hello"}]
+        )
+        return {"chatgpt_response": completion.choices[0].message.content}
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/list-data")
 def list_data():
@@ -22,6 +41,37 @@ from fastapi.responses import HTMLResponse
 async def home():
     with open("templates/index.html", "r") as f:
         return f.read()
+
+logger = logging.getLogger("uvicorn.error")
+
+class UPCRequest(BaseModel):
+    upc: str
+
+@app.post("/lookup-upc")
+async def lookup_upc(req: UPCRequest):
+    if not BARCODE_API_KEY:
+        logger.error("BARCODE_API_KEY not set")
+        raise HTTPException(status_code=500, detail="Barcode API key not set")
+
+    url = f"https://api.barcodelookup.com/v3/products?key={BARCODE_API_KEY}&barcode={req.upc}"
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+    except Exception as e:
+        logger.error("Error calling BarcodeLookup API", exc_info=True)
+        raise HTTPException(status_code=502, detail=f"External API error: {str(e)}")
+
+    data = resp.json().get("products")
+    if not data:
+        return {"error": "Product not found"}
+
+    product = data[0]
+    return {
+        "name": product.get("product_name",""),
+        "brand": product.get("brand",""),
+        "description": product.get("description",""),
+        "image": product.get("images",[""])[0]
+    }
 
 class LookupRequest(BaseModel):
     hs_code: str
@@ -64,8 +114,36 @@ async def lookup(req: LookupRequest):
     hs_rules = hs_rules.replace("", pd.NA).dropna(axis=1, how="all") \
         .to_dict(orient="records")
 
+    # Collect unique regulation links
+    links = {rec.get("TextLink") for rec in pga_hts if rec.get("TextLink")}
+    requirements = []
+
+    for url in links:
+        try:
+            page_text = requests.get(url, timeout=10).text
+            prompt = (
+                f"Product Name: {req_data.get('name', 'N/A')}\n"
+                f"Product Description: {req_data.get('description', 'N/A')}\n\n"
+                "From this regulatory page, list each required document to clear the product and its conditions."
+                f"\n\nPage content:\n{page_text}"
+            )
+            resp = openai.ChatCompletion.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "system", "content": "You are a customs compliance expert understanding how the participate government agencies work. Able to identify and describe the compliance needs for a given product."},
+                          {"role": "user", "content": prompt}]
+            )
+            raw = resp.choices[0].message.content
+            requirements.append({
+                "url": url,
+                "raw_response": raw,
+                "parsed_requirements": raw  # use identical for now
+            })
+        except Exception as e:
+            requirements.append({"url": url, "error": str(e)})
+
     return {
         "hs_chapters": chapters,
         "pga_hts": pga_hts,
-        "hs_rules": hs_rules
+        "hs_rules": hs_rules,
+        "pga_requirements": requirements
     }
