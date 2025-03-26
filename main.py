@@ -9,13 +9,21 @@ from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from urllib.parse import urlparse
 
-load_dotenv()
-app = FastAPI()
 # Set base directory to the directory where main.py is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 BARCODE_API_KEY = os.getenv("BARCODE_API_KEY")
 logger = logging.getLogger("uvicorn.error")
+
+load_dotenv()
+app = FastAPI(
+    title="PGA Lookup API",
+    version="1.0.0",
+    description="Lookup HS/PGA requirements and UPC product info",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 
 class LookupRequest(BaseModel):
     hs_code: str
