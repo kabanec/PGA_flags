@@ -6,6 +6,8 @@ import openai
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import HTMLResponse
 from urllib.parse import urlparse
 
@@ -14,6 +16,22 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 BARCODE_API_KEY = os.getenv("BARCODE_API_KEY")
 logger = logging.getLogger("uvicorn.error")
+# Hard‑coded credentials (for now)
+VALID_USER = "admin"
+VALID_PASS = "secret123"
+
+security = HTTPBasic()
+
+def auth(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = credentials.username == VALID_USER
+    correct_password = credentials.password == VALID_PASS
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 load_dotenv()
 app = FastAPI(
@@ -63,7 +81,7 @@ async def home():
         return f.read()
 
 @app.post("/lookup-upc")
-async def lookup_upc(req: UPCRequest):
+async def lookup_upc(req: UPCRequest, username: str = Depends(auth)):
     if not BARCODE_API_KEY:
         logger.error("BARCODE_API_KEY not set")
         raise HTTPException(status_code=500, detail="Barcode API key not set")
@@ -89,6 +107,7 @@ async def lookup_upc(req: UPCRequest):
     }
 
 @app.post("/lookup")
+#async def lookup(req: LookupRequest, username: str = Depends(auth)):
 async def lookup(req: LookupRequest):
     target = req.hs_code
 
@@ -106,7 +125,7 @@ async def lookup(req: LookupRequest):
         .rename(columns={"HTS Number - Full": "HsCode"})
     df_pga = pd.read_excel(f"{DATA_DIR}/PGA_codes.xlsx")
     pga_hts = (
-        df_hts.merge(df_pga, how="left",
+        df_hts.merge(df_pga, how="right",
                      left_on=["PGA Name Code","PGA Flag Code","PGA Program Code"],
                      right_on=["Agency Code","Code","Program Code"])
         .replace("", pd.NA).dropna(axis=1, how="all")
@@ -130,8 +149,10 @@ async def lookup(req: LookupRequest):
     links = set()
     for rec in pga_hts:
         for col in ("TextLink", "Website Link", "CFR"):
-            raw = rec.get(col) or ""
-            for url in raw.split():
+            raw = rec.get(col)
+            if raw is None or pd.isna(raw):
+                continue
+            for url in str(raw).split():
                 if is_valid_url(url):
                     links.add(url)
 
