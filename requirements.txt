@@ -5,4 +5,5 @@ requests==2.32.3
 pandas==2.2.2
 openai==1.35.3  # Optional, can be removed if commented out
 python-dotenv==1.0.1
-gunicorn==22.0.0  # Add gunicorn for production  # For loading environment variables
+gunicorn==22.0.0  # For Render
+openpyxl==3.1.2  # Add openpyxl for pandas Excel support.0.0  # Add gunicorn for production  # For loading environment variables
