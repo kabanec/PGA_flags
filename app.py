@@ -10,6 +10,9 @@ import openai
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
+# Fixed API key to be used across the application
+FIXED_API_KEY = "550e8400-e29b-41d4-a716-446655440000"
+
 app = Flask(__name__)
 
 # Initialize Flask-RESTX API with doc='/swagger' to set Swagger UI at /swagger
@@ -27,8 +30,6 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 load_dotenv()
 
 # Define paths for data files
-CUSTOMERS_FILE = os.path.join(DATA_DIR, "customers.json")
-SHIPMENTS_FILE = os.path.join(DATA_DIR, "shipments.json")
 UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 
 # Ensure the data and upload directories exist
@@ -37,35 +38,14 @@ if not os.path.exists(DATA_DIR):
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-# Initialize the JSON files if they don't exist
-if not os.path.exists(CUSTOMERS_FILE):
-    with open(CUSTOMERS_FILE, 'w') as f:
-        json.dump({}, f)
 
-if not os.path.exists(SHIPMENTS_FILE):
-    with open(SHIPMENTS_FILE, 'w') as f:
-        json.dump([], f)
-
-
-# Helper functions to read/write JSON files
-def read_customers():
-    with open(CUSTOMERS_FILE, 'r') as f:
+# Helper function to read customer profile for a specific scenario
+def read_customer_for_scenario(scenario):
+    customer_file = os.path.join(DATA_DIR, f"customer_{scenario}.json")
+    if not os.path.exists(customer_file):
+        raise FileNotFoundError(f"Customer profile for scenario '{scenario}' not found at {customer_file}")
+    with open(customer_file, 'r') as f:
         return json.load(f)
-
-
-def write_customers(customers):
-    with open(CUSTOMERS_FILE, 'w') as f:
-        json.dump(customers, f, indent=2)
-
-
-def read_shipments():
-    with open(SHIPMENTS_FILE, 'r') as f:
-        return json.load(f)
-
-
-def write_shipments(shipments):
-    with open(SHIPMENTS_FILE, 'w') as f:
-        json.dump(shipments, f, indent=2)
 
 
 # Mock HS Classification Service (returns a 10-digit HTS code)
@@ -179,106 +159,21 @@ def home():
     return render_template('home.html')
 
 
-# Onboarding page
-@app.route('/onboard', methods=['GET', 'POST'])
+# Onboarding page (display default customer profile)
+@app.route('/onboard', methods=['GET'])
 def onboard():
-    api_token = None
-    success = False
-    customers = read_customers()
+    customers = read_customer_for_scenario("default")
     existing_customer = None
     existing_api_token = None
 
-    # Check if a customer already exists
+    # Check if a customer exists in the profile
     if customers:
         existing_api_token = list(customers.keys())[0]  # Get the first customer (for demo purposes)
         existing_customer = customers[existing_api_token]
 
-    if request.method == 'POST':
-        # Collect customer data
-        company_name = request.form['company_name']
-
-        # Address fields
-        address = {
-            'street_address_1': request.form['street_address_1'],
-            'street_address_2': request.form['street_address_2'],
-            'city': request.form['city'],
-            'region': request.form['region'],
-            'postal_code': request.form['postal_code'],
-            'country': request.form['country']
-        }
-
-        # Contact fields
-        contact = {
-            'email': request.form['email'],
-            'phone': request.form['phone']
-        }
-
-        # Importer of Record and Power of Attorney
-        is_importer_of_record = request.form.get('is_importer_of_record') == 'on'
-        has_poa = request.form.get('has_poa') == 'on' if not is_importer_of_record else False
-        poa_expiry_date = None
-        poa_file_path = None
-
-        if has_poa:
-            poa_expiry_date = request.form['poa_expiry_date']
-            if 'poa_file' in request.files:
-                poa_file = request.files['poa_file']
-                if poa_file and poa_file.filename.endswith('.pdf'):
-                    # Save the file with a unique name
-                    filename = f"{uuid.uuid4()}_{poa_file.filename}"
-                    poa_file_path = os.path.join(UPLOAD_DIR, filename)
-                    poa_file.save(poa_file_path)
-
-        # Status
-        status = request.form['status']
-
-        # Generate a unique API token
-        api_token = str(uuid.uuid4())
-
-        # Load existing customers and clear them (for demo purposes, we only allow one customer)
-        customers = {}
-
-        # Store customer data with the API token
-        customers[api_token] = {
-            'company_name': company_name,
-            'address': address,
-            'contact': contact,
-            'is_importer_of_record': is_importer_of_record,
-            'has_poa': has_poa,
-            'poa_expiry_date': poa_expiry_date,
-            'poa_file_path': poa_file_path,
-            'status': status,
-            'created_at': datetime.utcnow().isoformat()
-        }
-
-        # Save updated customers to file
-        write_customers(customers)
-        success = True
-
-        # Update existing customer for display
-        existing_customer = customers[api_token]
-        existing_api_token = api_token
-
     return render_template('onboard.html',
-                           api_token=api_token,
-                           success=success,
                            existing_customer=existing_customer,
                            existing_api_token=existing_api_token)
-
-
-# Delete customer route
-@app.route('/delete-customer/<api_token>', methods=['POST'])
-def delete_customer(api_token):
-    customers = read_customers()
-    if api_token in customers:
-        # Delete any uploaded POA file if it exists
-        customer = customers[api_token]
-        if customer.get('poa_file_path') and os.path.exists(customer['poa_file_path']):
-            os.remove(customer['poa_file_path'])
-        # Remove the customer
-        del customers[api_token]
-        write_customers(customers)
-    return redirect(url_for('onboard'))
 
 
 # Redirect /onboard.html to /onboard
@@ -297,15 +192,19 @@ def shipment_form(scenario=None):
     success = False
     response = None
     pga_full_response = None
-    api_token = "09a7f994-979d-4cc1-8077-f06c91aa6882"  # Default dummy API token
+    api_token = FIXED_API_KEY  # Use the fixed API key
 
-    # Load customers to validate IOR/POA status
-    customers = read_customers()
+    # Default scenario if none provided
+    if not scenario:
+        scenario = "default"
+
+    # Load customer profile for the specific scenario
+    customers = read_customer_for_scenario(scenario)
     customer = customers.get(api_token)
 
     # Default dummy data for Scenario 1 (under $800, no previous shipments, no PGA flags)
     default_data = {
-        'api_token': api_token,
+        'api_token': api_token,  # Use the fixed API key
         'shipper_id': "SHIP123",
         'consignee_name': "John Doe",
         'consignee_street_address_1': "123 Main St",
@@ -315,38 +214,15 @@ def shipment_form(scenario=None):
         'consignee_postal_code': "10001",
         'consignee_country': "USA",
         'description': "Cotton T-shirt",
-        'hs_code': "6109100010",  # No dots
+        'hs_code': "6109100010",
         'quantity': 2,
         'value': 50.00,
         'country_of_origin': "CN",
         'tracking_number': "TRACK123"
     }
 
-    # Scenario 2: Above $800 daily limit due to previous shipments
-    if scenario == "above_800_limit":
-        default_data['value'] = 500.00  # This shipment alone is under $800
-        # Simulate previous shipments
-        previous_shipment = {
-            'shipment_data': {
-                'consignee_name': default_data['consignee_name'],
-                'value': 400.00,
-                'submitted_at': datetime.utcnow().isoformat()
-            }
-        }
-        shipments = read_shipments()
-        shipments.append(previous_shipment)
-        write_shipments(shipments)
-
-    # Scenario 3: Customer is not IOR and has no POA
-    elif scenario == "no_ior_no_poa":
-        if customer:
-            customer['is_importer_of_record'] = False
-            customer['has_poa'] = False
-            customers[api_token] = customer
-            write_customers(customers)
-
     # Scenario 4: Consignee is on denied party list
-    elif scenario == "denied_party":
+    if scenario == "denied_party":
         default_data['consignee_name'] = "John Smith"  # On denied party list
 
     # Scenario 5: HS Code triggers PGA flag (Lipstick)
@@ -448,14 +324,12 @@ def shipment_form(scenario=None):
                     entry_type = 'Type 11'
                     fallback_reason = 'Value exceeds $800'
                 else:
-                    # Load shipments from file
-                    shipments = read_shipments()
-                    # Check for multiple shipments per day per consignee
-                    same_day_shipments = [s for s in shipments if
-                                          s['shipment_data']['consignee_name'] == shipment_data['consignee_name']]
+                    # Use previous shipments from the customer profile
+                    same_day_shipments = customer.get('previous_shipments', [])
                     if len(same_day_shipments) > 0:
-                        total_value = sum(s['shipment_data']['value'] for s in same_day_shipments) + shipment_data[
-                            'value']
+                        total_value = sum(s['value'] for s in same_day_shipments if
+                                          s['consignee_name'] == shipment_data['consignee_name']) + shipment_data[
+                                          'value']
                         if total_value > 800:
                             entry_type = 'Type 11'
                             fallback_reason = 'Multiple shipments exceed $800 aggregate value'
@@ -479,22 +353,7 @@ def shipment_form(scenario=None):
                     warning_message = f"PGA flags triggered: {', '.join(pga_flags)}. Additional documentation may be required."
 
                 if not error_message:
-                    # Step 4: Store shipment
-                    shipment_record = {
-                        'shipment_data': shipment_data,
-                        'entry_type': entry_type,
-                        'fallback_reason': fallback_reason,
-                        'hts_code': hts_code,
-                        'pga_flags': pga_flags,
-                        'submitted_at': datetime.utcnow().isoformat()
-                    }
-
-                    # Load existing shipments, append the new one, and save
-                    shipments = read_shipments()
-                    shipments.append(shipment_record)
-                    write_shipments(shipments)
-
-                    # Step 5: Return response
+                    # Step 4: Return response (no need to store shipments since we're using static profiles)
                     response = {
                         'status': 'success',
                         'entry_type': entry_type,
@@ -574,8 +433,61 @@ class ShipmentResource(Resource):
         if not shipment_data:
             return {'error': 'Shipment data required'}, 400
 
-        response, status = submit_shipment(api_token, shipment_data)
-        return response, status
+        # For the API endpoint, use the "default" scenario customer profile
+        customers = read_customer_for_scenario("default")
+        customer = customers.get(api_token)
+        if not customer:
+            return {'error': 'Invalid API token: Customer not found'}, 401
+
+        # Check IOR/POA status
+        if not customer['is_importer_of_record'] and not customer['has_poa']:
+            return {'error': 'Customer is not an Importer of Record and has no Power of Attorney filed on account'}, 400
+
+        # Check denied party list
+        if check_denied_party_list(shipment_data['consignee_name']):
+            return {'error': 'Consignee is on the denied party list and fails screening'}, 400
+
+        # Check for negative value
+        if shipment_data['value'] < 0:
+            return {'error': 'Shipment value cannot be negative'}, 400
+
+        # Check Type 86 eligibility
+        entry_type = 'Type 86'
+        fallback_reason = None
+        if shipment_data['value'] > 800:
+            entry_type = 'Type 11'
+            fallback_reason = 'Value exceeds $800'
+        else:
+            same_day_shipments = customer.get('previous_shipments', [])
+            if len(same_day_shipments) > 0:
+                total_value = sum(
+                    s['value'] for s in same_day_shipments if s['consignee_name'] == shipment_data['consignee_name']) + \
+                              shipment_data['value']
+                if total_value > 800:
+                    entry_type = 'Type 11'
+                    fallback_reason = 'Multiple shipments exceed $800 aggregate value'
+
+        # Perform HS classification
+        hts_code = shipment_data['hs_code'] if shipment_data['hs_code'] else mock_hs_classification(
+            shipment_data['description'])
+
+        # Check PGA flags
+        pga_flags, pga_full_response = lookup_pga_requirements(hts_code, shipment_data['consignee_name'],
+                                                               shipment_data['description'])
+        if not pga_flags:
+            pga_flags = mock_pga_flags(hts_code)
+
+        # Return response
+        response = {
+            'status': 'success',
+            'entry_type': entry_type,
+            'fallback_reason': fallback_reason,
+            'hts_code': hts_code,
+            'pga_flags': pga_flags,
+            'pga_full_response': pga_full_response,
+            'shipment': shipment_data
+        }
+        return response, 200
 
 
 # Define security for Swagger (API token in header)
