@@ -1,0 +1,257 @@
+[
+  {
+    "shipment_data": {
+      "shipper_id": "SHIP123",
+      "consignee_name": "John Doe",
+      "consignee_address": {
+        "street_address_1": "123 Main St",
+        "street_address_2": "Apt 4B",
+        "city": "New York",
+        "region": "NY",
+        "postal_code": "10001",
+        "country": "USA"
+      },
+      "description": "Cotton T-shirt",
+      "quantity": 2,
+      "value": 50.0,
+      "country_of_origin": "CN",
+      "tracking_number": "TRACK123",
+      "bol_file_path": null,
+      "commercial_invoice_path": null,
+      "hs_code": "6109.10.0010"
+    },
+    "entry_type": "Type 86",
+    "fallback_reason": null,
+    "hts_code": "6109.10.0010",
+    "pga_flags": [
+      "CPSC"
+    ],
+    "submitted_at": "2025-04-02T13:52:51.930331"
+  },
+  {
+    "shipment_data": {
+      "shipper_id": "SHIP123",
+      "consignee_name": "John Doe",
+      "consignee_address": {
+        "street_address_1": "123 Main St",
+        "street_address_2": "Apt 4B",
+        "city": "New York",
+        "region": "NY",
+        "postal_code": "10001",
+        "country": "USA"
+      },
+      "description": "Cotton T-shirt",
+      "quantity": 2,
+      "value": 50.0,
+      "country_of_origin": "CN",
+      "tracking_number": "TRACK123",
+      "bol_file_path": null,
+      "commercial_invoice_path": null,
+      "pga_documents": [],
+      "hs_code": "6109.10.0010"
+    },
+    "entry_type": "Type 86",
+    "fallback_reason": null,
+    "hts_code": "6109.10.0010",
+    "pga_flags": [],
+    "submitted_at": "2025-04-02T15:35:21.280549"
+  },
+  {
+    "shipment_data": {
+      "shipper_id": "SHIP123",
+      "consignee_name": "John Doe",
+      "consignee_address": {
+        "street_address_1": "123 Main St",
+        "street_address_2": "Apt 4B",
+        "city": "New York",
+        "region": "NY",
+        "postal_code": "10001",
+        "country": "USA"
+      },
+      "description": "Lipstick - Creamy Matte Finish",
+      "quantity": 2,
+      "value": 50.0,
+      "country_of_origin": "CN",
+      "tracking_number": "TRACK123",
+      "bol_file_path": null,
+      "commercial_invoice_path": null,
+      "pga_documents": [],
+      "hs_code": "3403.11.5000"
+    },
+    "entry_type": "Type 86",
+    "fallback_reason": null,
+    "hts_code": "3403.11.5000",
+    "pga_flags": [],
+    "submitted_at": "2025-04-02T15:36:48.234734"
+  },
+  {
+    "shipment_data": {
+      "shipper_id": "SHIP123",
+      "consignee_name": "John Doe",
+      "consignee_address": {
+        "street_address_1": "123 Main St",
+        "street_address_2": "Apt 4B",
+        "city": "New York",
+        "region": "NY",
+        "postal_code": "10001",
+        "country": "USA"
+      },
+      "description": "Cotton T-shirt",
+      "quantity": 2,
+      "value": 50.0,
+      "country_of_origin": "CN",
+      "tracking_number": "TRACK123",
+      "bol_file_path": null,
+      "commercial_invoice_path": null,
+      "pga_documents": [],
+      "hs_code": null
+    },
+    "entry_type": "Type 86",
+    "fallback_reason": null,
+    "hts_code": "6109.10.0010",
+    "pga_flags": [],
+    "submitted_at": "2025-04-02T15:37:28.018460"
+  },
+  {
+    "shipment_data": {
+      "consignee_name": "John Doe",
+      "value": 400.0,
+      "submitted_at": "2025-04-02T15:37:49.726201"
+    }
+  },
+  {
+    "shipment_data": {
+      "consignee_name": "John Doe",
+      "value": 400.0,
+      "submitted_at": "2025-04-02T15:37:54.831019"
+    }
+  },
+  {
+    "shipment_data": {
+      "shipper_id": "SHIP123",
+      "consignee_name": "John Doe",
+      "consignee_address": {
+        "street_address_1": "123 Main St",
+        "street_address_2": "Apt 4B",
+        "city": "New York",
+        "region": "NY",
+        "postal_code": "10001",
+        "country": "USA"
+      },
+      "description": "Cotton T-shirt",
+      "quantity": 2,
+      "value": 500.0,
+      "country_of_origin": "CN",
+      "tracking_number": "TRACK123",
+      "bol_file_path": null,
+      "commercial_invoice_path": null,
+      "pga_documents": [],
+      "hs_code": "6109.10.0010"
+    },
+    "entry_type": "Type 11",
+    "fallback_reason": "Multiple shipments exceed $800 aggregate value",
+    "hts_code": "6109.10.0010",
+    "pga_flags": [],
+    "submitted_at": "2025-04-02T15:37:54.837901"
+  },
+  {
+    "shipment_data": {
+      "consignee_name": "John Doe",
+      "value": 400.0,
+      "submitted_at": "2025-04-02T16:10:33.743833"
+    }
+  },
+  {
+    "shipment_data": {
+      "consignee_name": "John Doe",
+      "value": 400.0,
+      "submitted_at": "2025-04-02T16:11:25.583927"
+    }
+  },
+  {
+    "shipment_data": {
+      "shipper_id": "SHIP123",
+      "consignee_name": "John Doe",
+      "consignee_address": {
+        "street_address_1": "123 Main St",
+        "street_address_2": "Apt 4B",
+        "city": "New York",
+        "region": "NY",
+        "postal_code": "10001",
+        "country": "USA"
+      },
+      "description": "Cotton T-shirt",
+      "quantity": 2,
+      "value": 500.0,
+      "country_of_origin": "CN",
+      "tracking_number": "TRACK123",
+      "bol_file_path": null,
+      "commercial_invoice_path": null,
+      "pga_documents": [],
+      "hs_code": "6109100010"
+    },
+    "entry_type": "Type 11",
+    "fallback_reason": "Multiple shipments exceed $800 aggregate value",
+    "hts_code": "6109100010",
+    "pga_flags": [],
+    "submitted_at": "2025-04-02T16:11:54.471260"
+  },
+  {
+    "shipment_data": {
+      "shipper_id": "SHIP123",
+      "consignee_name": "John Doe",
+      "consignee_address": {
+        "street_address_1": "123 Main St",
+        "street_address_2": "Apt 4B",
+        "city": "New York",
+        "region": "NY",
+        "postal_code": "10001",
+        "country": "USA"
+      },
+      "description": "Lipstick - Creamy Matte Finish",
+      "quantity": 2,
+      "value": 50.0,
+      "country_of_origin": "CN",
+      "tracking_number": "TRACK123",
+      "bol_file_path": null,
+      "commercial_invoice_path": null,
+      "pga_documents": [],
+      "hs_code": "3403115000"
+    },
+    "entry_type": "Type 11",
+    "fallback_reason": "Multiple shipments exceed $800 aggregate value",
+    "hts_code": "3403115000",
+    "pga_flags": [
+      "AMS"
+    ],
+    "submitted_at": "2025-04-02T16:13:22.476281"
+  },
+  {
+    "shipment_data": {
+      "shipper_id": "SHIP123",
+      "consignee_name": "John Doe",
+      "consignee_address": {
+        "street_address_1": "123 Main St",
+        "street_address_2": "Apt 4B",
+        "city": "New York",
+        "region": "NY",
+        "postal_code": "10001",
+        "country": "USA"
+      },
+      "description": "Cotton T-shirt",
+      "quantity": 2,
+      "value": 50.0,
+      "country_of_origin": "CN",
+      "tracking_number": "TRACK123",
+      "bol_file_path": null,
+      "commercial_invoice_path": null,
+      "pga_documents": [],
+      "hs_code": "6109100010"
+    },
+    "entry_type": "Type 11",
+    "fallback_reason": "Multiple shipments exceed $800 aggregate value",
+    "hts_code": "6109100010",
+    "pga_flags": [],
+    "submitted_at": "2025-04-02T16:19:44.301283"
+  }
+]

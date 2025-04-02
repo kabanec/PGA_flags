@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submit Shipment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Submit Shipment (Manual Test)</h1>
+
+    {% if error_message %}
+    <div class="error-message">
+        <p>{{ error_message }}</p>
+    </div>
+    {% endif %}
+
+    {% if warning_message %}
+    <div class="warning-message">
+        <p>{{ warning_message }}</p>
+    </div>
+    {% endif %}
+
+    {% if success %}
+    <div class="success-message">
+        <h2>Submission Successful</h2>
+        {% if success_message %}
+        <p>{{ success_message }}</p>
+        {% endif %}
+        <h3>Shipment Response</h3>
+        <pre>{{ response | tojson(indent=2) }}</pre>
+        {% if response.pga_full_response %}
+        <h3>Full PGA API Response</h3>
+        <pre>{{ response.pga_full_response | tojson(indent=2) }}</pre>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" class="compact-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="api_token">API Token:</label>
+                <input type="text" id="api_token" name="api_token" value="{{ default_data.api_token }}">
+            </div>
+            <div class="form-group">
+                <label for="shipper_id">Shipper ID:</label>
+                <input type="text" id="shipper_id" name="shipper_id" value="{{ default_data.shipper_id }}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="consignee_name">Consignee Name:</label>
+                <input type="text" id="consignee_name" name="consignee_name" value="{{ default_data.consignee_name }}" required>
+            </div>
+        </div>
+
+        <fieldset>
+            <legend>Consignee Address</legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="consignee_street_address_1">Street Address 1:</label>
+                    <input type="text" id="consignee_street_address_1" name="consignee_street_address_1" value="{{ default_data.consignee_street_address_1 }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="consignee_street_address_2">Street Address 2:</label>
+                    <input type="text" id="consignee_street_address_2" name="consignee_street_address_2" value="{{ default_data.consignee_street_address_2 }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="consignee_city">City:</label>
+                    <input type="text" id="consignee_city" name="consignee_city" value="{{ default_data.consignee_city }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="consignee_region">Region/State:</label>
+                    <input type="text" id="consignee_region" name="consignee_region" value="{{ default_data.consignee_region }}" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="consignee_postal_code">Postal Code:</label>
+                    <input type="text" id="consignee_postal_code" name="consignee_postal_code" value="{{ default_data.consignee_postal_code }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="consignee_country">Country:</label>
+                    <select id="consignee_country" name="consignee_country" required>
+                        <option value="USA" {% if default_data.consignee_country == "USA" %}selected{% endif %}>USA</option>
+                        <option value="Canada" {% if default_data.consignee_country == "Canada" %}selected{% endif %}>Canada</option>
+                        <option value="Mexico" {% if default_data.consignee_country == "Mexico" %}selected{% endif %}>Mexico</option>
+                        <option value="China" {% if default_data.consignee_country == "China" %}selected{% endif %}>China</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <input type="text" id="description" name="description" value="{{ default_data.description }}" required>
+            </div>
+            <div class="form-group">
+                <label for="hs_code">HS Code (Optional):</label>
+                <input type="text" id="hs_code" name="hs_code" value="{{ default_data.hs_code }}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="quantity">Quantity:</label>
+                <input type="number" id="quantity" name="quantity" value="{{ default_data.quantity }}" required>
+            </div>
+            <div class="form-group">
+                <label for="value">Value ($):</label>
+                <input type="number" step="0.01" id="value" name="value" value="{{ default_data.value }}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="country_of_origin">Country of Origin:</label>
+                <select id="country_of_origin" name="country_of_origin" required>
+                    <option value="CN" {% if default_data.country_of_origin == "CN" %}selected{% endif %}>China (CN)</option>
+                    <option value="USA" {% if default_data.country_of_origin == "USA" %}selected{% endif %}>USA</option>
+                    <option value="Canada" {% if default_data.country_of_origin == "Canada" %}selected{% endif %}>Canada</option>
+                    <option value="Mexico" {% if default_data.country_of_origin == "Mexico" %}selected{% endif %}>Mexico</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="tracking_number">Tracking Number:</label>
+                <input type="text" id="tracking_number" name="tracking_number" value="{{ default_data.tracking_number }}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="bol_file">Bill of Lading (PDF, Optional):</label>
+                <input type="file" id="bol_file" name="bol_file" accept=".pdf">
+            </div>
+            <div class="form-group">
+                <label for="commercial_invoice">Commercial Invoice (PDF, Optional):</label>
+                <input type="file" id="commercial_invoice" name="commercial_invoice" accept=".pdf">
+            </div>
+        </div>
+
+        <fieldset>
+            <legend>PGA Documents (Optional, Up to 5 Files)</legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pga_document_1">PGA Document 1:</label>
+                    <input type="file" id="pga_document_1" name="pga_document_1" accept=".pdf">
+                </div>
+                <div class="form-group">
+                    <label for="pga_document_2">PGA Document 2:</label>
+                    <input type="file" id="pga_document_2" name="pga_document_2" accept=".pdf">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pga_document_3">PGA Document 3:</label>
+                    <input type="file" id="pga_document_3" name="pga_document_3" accept=".pdf">
+                </div>
+                <div class="form-group">
+                    <label for="pga_document_4">PGA Document 4:</label>
+                    <input type="file" id="pga_document_4" name="pga_document_4" accept=".pdf">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pga_document_5">PGA Document 5:</label>
+                    <input type="file" id="pga_document_5" name="pga_document_5" accept=".pdf">
+                </div>
+            </div>
+        </fieldset>
+
+        <button type="submit">Submit Shipment</button>
+    </form>
+    <p><a href="{{ url_for('home') }}">Back to Home</a></p>
+</body>
+</html>

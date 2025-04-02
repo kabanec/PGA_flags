@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Type 86 Shipment Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Type 86 Shipment Demo</h1>
+    <p>Welcome to the Type 86 Shipment Processing Demo! This prototype demonstrates the process of onboarding a customer and submitting a shipment under Type 86 regulations with a fallback to Type 11. Follow the steps below to explore the functionality:</p>
+    <h2>Demo Steps</h2>
+    <ol>
+        <li><strong>Onboard a Customer</strong>: Register a new customer to generate an API token for shipment submission. <a href="{{ url_for('onboard') }}">Start Onboarding</a></li>
+        <li><strong>Submit a Shipment</strong>: Use the API token to submit a shipment for processing. Choose a scenario below to test different cases:</li>
+        <ul>
+            <li><a href="{{ url_for('shipment_form', scenario='default') }}">Scenario 1: Under $800, No Previous Shipments, No PGA Flags</a></li>
+            <li><a href="{{ url_for('shipment_form', scenario='above_800_limit') }}">Scenario 2: Above $800 Daily Limit Due to Previous Shipments</a></li>
+            <li><a href="{{ url_for('shipment_form', scenario='no_ior_no_poa') }}">Scenario 3: Customer Not IOR and No POA</a></li>
+            <li><a href="{{ url_for('shipment_form', scenario='denied_party') }}">Scenario 4: Consignee on Denied Party List</a></li>
+            <li><a href="{{ url_for('shipment_form', scenario='pga_flag') }}">Scenario 5: HS Code Triggers PGA Flag (Lipstick, HS 3403115000)</a></li>
+             <li><a href="{{ url_for('shipment_form', scenario='no_hs_code') }}">Scenario 6: No HS Code Provided (Assigned by Internal Service)</a></li>
+        </ul>
+        <li><strong>Explore the API</strong>: View the API documentation and test the endpoints using Swagger UI. <a href="/swagger">View API Documentation</a></li>
+    </ol>
+    <p><strong>Note:</strong> The forms are prepopulated with dummy data for easy testing. Customer and shipment data are stored in <code>data/customers.json</code> and <code>data/shipments.json</code>, respectively.</p>
+</body>
+</html>
