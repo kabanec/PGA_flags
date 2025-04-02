@@ -2,163 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Onboard New Customer</title>
+    <title>Customer Profile</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script>
-        function togglePOAFields() {
-            const isImporter = document.getElementById('is_importer_of_record').checked;
-            const hasPOA = document.getElementById('has_poa');
-            const poaFields = document.getElementById('poa_fields');
-
-            hasPOA.disabled = isImporter;
-            hasPOA.checked = false;
-            poaFields.style.display = isImporter || !hasPOA.checked ? 'none' : 'block';
-        }
-
-        function togglePOAUpload() {
-            const hasPOA = document.getElementById('has_poa').checked;
-            const poaFields = document.getElementById('poa_fields');
-            poaFields.style.display = hasPOA ? 'block' : 'none';
-        }
-
         function copyToClipboard() {
             const apiToken = document.getElementById('api_token').textContent;
             navigator.clipboard.writeText(apiToken).then(() => {
                 alert('API Token copied to clipboard!');
             });
         }
-
-        window.onload = function() {
-            togglePOAFields();
-        };
     </script>
 </head>
 <body>
-    <h1>Onboard New Customer</h1>
+    <h1>Customer Profile</h1>
 
     {% if existing_customer %}
     <div class="existing-customer">
-        <h2>Existing Customer</h2>
-        <p>A customer has already been created:</p>
+        <h2>Customer Details</h2>
+        <p>The following customer profile is used for the default scenario:</p>
         <ul>
             <li><strong>Company Name:</strong> {{ existing_customer.company_name }}</li>
-            <li><strong>API Token:</strong> <span id="existing_api_token">{{ existing_api_token }}</span>
-                <button onclick="navigator.clipboard.writeText('{{ existing_api_token }}').then(() => alert('API Token copied to clipboard!'))">Copy</button>
+            <li><strong>API Token:</strong> <span id="api_token">{{ existing_api_token }}</span>
+                <button onclick="copyToClipboard()">Copy to Clipboard</button>
             </li>
+            <li><strong>Address:</strong> {{ existing_customer.address.street_address_1 }}{% if existing_customer.address.street_address_2 %}, {{ existing_customer.address.street_address_2 }}{% endif %}, {{ existing_customer.address.city }}, {{ existing_customer.address.region }} {{ existing_customer.address.postal_code }}, {{ existing_customer.address.country }}</li>
+            <li><strong>Email:</strong> {{ existing_customer.contact.email }}</li>
+            <li><strong>Phone:</strong> {{ existing_customer.contact.phone }}</li>
+            <li><strong>Importer of Record:</strong> {{ 'Yes' if existing_customer.is_importer_of_record else 'No' }}</li>
+            <li><strong>Has Power of Attorney:</strong> {{ 'Yes' if existing_customer.has_poa else 'No' }}</li>
             <li><strong>Status:</strong> {{ existing_customer.status }}</li>
         </ul>
-        <form method="POST" action="{{ url_for('delete_customer', api_token=existing_api_token) }}" onsubmit="return confirm('Are you sure you want to delete this customer?');">
-            <button type="submit" class="delete-button">Delete Customer</button>
-        </form>
     </div>
     {% else %}
-    <p>No customer has been created yet. Use the form below to onboard a new customer.</p>
+    <p>No customer profile found. Please ensure customer_default.json is correctly set up.</p>
     {% endif %}
 
-    {% if success %}
-    <div class="success-message">
-        <p>Onboarding successful! Your API token is: <span id="api_token">{{ api_token }}</span></p>
-        <button onclick="copyToClipboard()">Copy to Clipboard</button>
-    </div>
-    {% endif %}
-
-    <form method="POST" enctype="multipart/form-data" class="compact-form">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="company_name">Company Name:</label>
-                <input type="text" id="company_name" name="company_name" value="Example Corp" required>
-            </div>
-            <div class="form-group">
-                <label for="status">Status:</label>
-                <select id="status" name="status">
-                    <option value="Active" selected>Active</option>
-                    <option value="Inactive">Inactive</option>
-                </select>
-            </div>
-        </div>
-
-        <fieldset>
-            <legend>Address</legend>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="street_address_1">Street Address 1:</label>
-                    <input type="text" id="street_address_1" name="street_address_1" value="123 Business Rd" required>
-                </div>
-                <div class="form-group">
-                    <label for="street_address_2">Street Address 2:</label>
-                    <input type="text" id="street_address_2" name="street_address_2" value="Suite 100">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="city">City:</label>
-                    <input type="text" id="city" name="city" value="San Francisco" required>
-                </div>
-                <div class="form-group">
-                    <label for="region">Region/State:</label>
-                    <input type="text" id="region" name="region" value="CA" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="postal_code">Postal Code:</label>
-                    <input type="text" id="postal_code" name="postal_code" value="94105" required>
-                </div>
-                <div class="form-group">
-                    <label for="country">Country:</label>
-                    <select id="country" name="country" required>
-                        <option value="USA" selected>USA</option>
-                        <option value="Canada">Canada</option>
-                        <option value="Mexico">Mexico</option>
-                        <option value="China">China</option>
-                    </select>
-                </div>
-            </div>
-        </fieldset>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" value="contact@example.com" required>
-            </div>
-            <div class="form-group">
-                <label for="phone">Phone:</label>
-                <input type="tel" id="phone" name="phone" value="+1-555-123-4567" required>
-            </div>
-        </div>
-
-        <fieldset>
-            <legend>Importer of Record / Power of Attorney</legend>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="is_importer_of_record">
-                        <input type="checkbox" id="is_importer_of_record" name="is_importer_of_record" onchange="togglePOAFields()">
-                        Is Importer of Record
-                    </label>
-                </div>
-                <div class="form-group">
-                    <label for="has_poa">
-                        <input type="checkbox" id="has_poa" name="has_poa" onchange="togglePOAUpload()" disabled>
-                        Has Power of Attorney
-                    </label>
-                </div>
-            </div>
-            <div id="poa_fields" style="display: none;">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="poa_file">POA Document (PDF):</label>
-                        <input type="file" id="poa_file" name="poa_file" accept=".pdf">
-                    </div>
-                    <div class="form-group">
-                        <label for="poa_expiry_date">Expiry Date:</label>
-                        <input type="date" id="poa_expiry_date" name="poa_expiry_date" value="2025-12-31">
-                    </div>
-                </div>
-            </div>
-        </fieldset>
-
-        <button type="submit">Onboard</button>
-    </form>
     <p><a href="{{ url_for('home') }}">Back to Home</a></p>
 </body>
 </html>
