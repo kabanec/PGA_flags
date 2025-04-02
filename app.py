@@ -155,7 +155,6 @@ def lookup_pga_requirements(hs_code, name, description):
                 if is_valid_url(url):
                     links.add(url)
 
-    # Inside lookup_pga_requirements function
     requirements = []
     for url in sorted(links):
         # Mock response instead of calling OpenAI
