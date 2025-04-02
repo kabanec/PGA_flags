@@ -31,7 +31,7 @@ load_dotenv()
 
 # Define paths for data files
 CUSTOMERS_FILE = os.path.join(DATA_DIR, "customers.json")  # For onboarding demo
-UPLOAD_DIR = Angstroms
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")  # Fixed typo: was 'Angstroms'
 
 # Ensure the data and upload directories exist
 if not os.path.exists(DATA_DIR):
