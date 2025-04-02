@@ -30,13 +30,19 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 load_dotenv()
 
 # Define paths for data files
-UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
+CUSTOMERS_FILE = os.path.join(DATA_DIR, "customers.json")  # For onboarding demo
+UPLOAD_DIR = Angstroms
 
 # Ensure the data and upload directories exist
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+
+# Initialize the JSON files if they don't exist
+if not os.path.exists(CUSTOMERS_FILE):
+    with open(CUSTOMERS_FILE, 'w') as f:
+        json.dump({}, f)
 
 
 # Helper function to read customer profile for a specific scenario
@@ -46,6 +52,17 @@ def read_customer_for_scenario(scenario):
         raise FileNotFoundError(f"Customer profile for scenario '{scenario}' not found at {customer_file}")
     with open(customer_file, 'r') as f:
         return json.load(f)
+
+
+# Helper functions to read/write JSON files for onboarding
+def read_customers():
+    with open(CUSTOMERS_FILE, 'r') as f:
+        return json.load(f)
+
+
+def write_customers(customers):
+    with open(CUSTOMERS_FILE, 'w') as f:
+        json.dump(customers, f, indent=2)
 
 
 # Mock HS Classification Service (returns a 10-digit HTS code)
@@ -159,21 +176,155 @@ def home():
     return render_template('home.html')
 
 
-# Onboarding page (display default customer profile)
-@app.route('/onboard', methods=['GET'])
+# Onboarding page
+@app.route('/onboard', methods=['GET', 'POST'])
 def onboard():
-    customers = read_customer_for_scenario("default")
+    api_token = None
+    success = False
+    customers = read_customers()
     existing_customer = None
     existing_api_token = None
+    form_data = {
+        'company_name': "Example Corp",
+        'street_address_1': "123 Business Rd",
+        'street_address_2': "Suite 100",
+        'city': "San Francisco",
+        'region': "CA",
+        'postal_code': "94105",
+        'country': "USA",
+        'email': "contact@example.com",
+        'phone': "+1-555-123-4567",
+        'is_importer_of_record': False,
+        'has_poa': False,
+        'poa_expiry_date': "2025-12-31",
+        'status': "Active"
+    }
 
-    # Check if a customer exists in the profile
+    # Check if a customer already exists
     if customers:
         existing_api_token = list(customers.keys())[0]  # Get the first customer (for demo purposes)
         existing_customer = customers[existing_api_token]
+        # Update form_data with existing customer data
+        form_data.update({
+            'company_name': existing_customer['company_name'],
+            'street_address_1': existing_customer['address']['street_address_1'],
+            'street_address_2': existing_customer['address']['street_address_2'],
+            'city': existing_customer['address']['city'],
+            'region': existing_customer['address']['region'],
+            'postal_code': existing_customer['address']['postal_code'],
+            'country': existing_customer['address']['country'],
+            'email': existing_customer['contact']['email'],
+            'phone': existing_customer['contact']['phone'],
+            'is_importer_of_record': existing_customer['is_importer_of_record'],
+            'has_poa': existing_customer['has_poa'],
+            'poa_expiry_date': existing_customer.get('poa_expiry_date', "2025-12-31"),
+            'status': existing_customer['status']
+        })
+
+    if request.method == 'POST':
+        # Collect customer data
+        company_name = request.form['company_name']
+
+        # Address fields
+        address = {
+            'street_address_1': request.form['street_address_1'],
+            'street_address_2': request.form['street_address_2'],
+            'city': request.form['city'],
+            'region': request.form['region'],
+            'postal_code': request.form['postal_code'],
+            'country': request.form['country']
+        }
+
+        # Contact fields
+        contact = {
+            'email': request.form['email'],
+            'phone': request.form['phone']
+        }
+
+        # Importer of Record and Power of Attorney
+        is_importer_of_record = request.form.get('is_importer_of_record') == 'on'
+        has_poa = request.form.get('has_poa') == 'on' if not is_importer_of_record else False
+        poa_expiry_date = None
+        poa_file_path = None
+
+        if has_poa:
+            poa_expiry_date = request.form['poa_expiry_date']
+            if 'poa_file' in request.files:
+                poa_file = request.files['poa_file']
+                if poa_file and poa_file.filename.endswith('.pdf'):
+                    # Save the file with a unique name
+                    filename = f"{uuid.uuid4()}_{poa_file.filename}"
+                    poa_file_path = os.path.join(UPLOAD_DIR, filename)
+                    poa_file.save(poa_file_path)
+
+        # Status
+        status = request.form['status']
+
+        # Use the fixed API key
+        api_token = FIXED_API_KEY
+
+        # Update form_data with submitted values
+        form_data.update({
+            'company_name': company_name,
+            'street_address_1': address['street_address_1'],
+            'street_address_2': address['street_address_2'],
+            'city': address['city'],
+            'region': address['region'],
+            'postal_code': address['postal_code'],
+            'country': address['country'],
+            'email': contact['email'],
+            'phone': contact['phone'],
+            'is_importer_of_record': is_importer_of_record,
+            'has_poa': has_poa,
+            'poa_expiry_date': poa_expiry_date if poa_expiry_date else "2025-12-31",
+            'status': status
+        })
+
+        # Load existing customers and clear them (for demo purposes, we only allow one customer)
+        customers = {}
+
+        # Store customer data with the fixed API token
+        customers[api_token] = {
+            'company_name': company_name,
+            'address': address,
+            'contact': contact,
+            'is_importer_of_record': is_importer_of_record,
+            'has_poa': has_poa,
+            'poa_expiry_date': poa_expiry_date,
+            'poa_file_path': poa_file_path,
+            'status': status,
+            'created_at': datetime.utcnow().isoformat()
+        }
+
+        # Save updated customers to file
+        write_customers(customers)
+        success = True
+
+        # Update existing customer for display
+        existing_customer = customers[api_token]
+        existing_api_token = api_token
 
     return render_template('onboard.html',
+                           api_token=api_token,
+                           success=success,
                            existing_customer=existing_customer,
-                           existing_api_token=existing_api_token)
+                           existing_api_token=existing_api_token,
+                           form_data=form_data)
+
+
+# Delete customer route
+@app.route('/delete-customer/<api_token>', methods=['POST'])
+def delete_customer(api_token):
+    customers = read_customers()
+    if api_token in customers:
+        # Delete any uploaded POA file if it exists
+        customer = customers[api_token]
+        if customer.get('poa_file_path') and os.path.exists(customer['poa_file_path']):
+            os.remove(customer['poa_file_path'])
+        # Remove the customer
+        del customers[api_token]
+        write_customers(customers)
+    return redirect(url_for('onboard'))
 
 
 # Redirect /onboard.html to /onboard
